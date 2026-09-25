@@ -30,7 +30,7 @@ In dieser Laborübung sammeln Sie praktische Erfahrungen mit **Cisco Modeling La
 
 **Bei einer Neuinstallation der CML-VM** wird der MCP-Server direkt im Einrichtungsassistenten angeboten. Im Dialog *„Select which optional services should be enabled“* aktivieren Sie mit der **Leertaste** den Eintrag **MCPServer** (*MCP server for LLMs*) und bestätigen mit **Continue**.
 
-![cml-install-mcp](./images/cml-install-mcp.png)
+![cml-install-mcp](./images/cml_vm_install_step.png)
 
 > **Hinweis:** Wurde der Dienst bei der Installation nicht ausgewählt, kann er jederzeit nachträglich im **Cockpit** der CML-VM (`https://<CML-IP>:9090`) aktiviert werden – dort, wo auch die anderen optionalen Dienste (OpenSSH, PATty) verwaltet werden.
 
@@ -39,11 +39,11 @@ In dieser Laborübung sammeln Sie praktische Erfahrungen mit **Cisco Modeling La
 1. Melden Sie sich an der CML-Weboberfläche an.
 2. Öffnen Sie oben rechts **Tools** → **MCP Clients**.
 
-![cml-tools-mcp-clients](./images/cml-tools-mcp-clients.png)
+![cml-tools-mcp-clients](./images/01_mcp_config.png)
 
 3. CML zeigt eine fertige **JSON-Konfiguration** für den MCP-Client an. Die IP-Adresse Ihres CML-Servers ist darin bereits eingetragen. Kopieren Sie sie mit **COPY** oder speichern Sie sie mit **DOWNLOAD JSON**.
 
-![cml-mcp-config](./images/cml-mcp-config.png)
+![cml-mcp-config](./images/02_mcp_config.png)
 
 ```json
 {
