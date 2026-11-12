@@ -26,7 +26,7 @@ Diese Erweiterung ist bewusst als **Vergleichsexperiment** aufgebaut: Sie führe
 - Mindestens **16 GB RAM** im System (für größere Modelle empfohlen: 32 GB)
 - Eine dedizierte GPU ist hilfreich, aber nicht zwingend erforderlich
 - **CML ab Version 2.10** mit aktiviertem Dienst **MCPServer** und **Node.js (LTS)** – beides ist aus der Hauptübung bereits vorhanden
-- Die Base64-Werte für CML- und pyATS-Zugangsdaten aus der Hauptübung (Schritt 2b und 2c)
+- Der Base64-Wert für die CML-Zugangsdaten aus der Hauptübung (Schritt 2b)
 
 ---
 
@@ -86,16 +86,10 @@ LM Studio nutzt dasselbe Konfigurationsformat wie Claude Desktop. Sie verbinden 
         "mcp-remote",
         "https://<CML-IP>/mcp",
         "--header",
-        "X-Authorization:${CML_AUTH_HEADER}",
-        "--header",
-        "X-PyATS-Authorization:${PYATS_AUTH_HEADER}",
-        "--header",
-        "X-PyATS-Enable:${PYATS_ENABLE_HEADER}"
+        "X-Authorization:${CML_AUTH_HEADER}"
       ],
       "env": {
         "CML_AUTH_HEADER": "Basic <base64_encoded_cml_credentials>",
-        "PYATS_AUTH_HEADER": "Basic Y2lzY286Y2lzY28=",
-        "PYATS_ENABLE_HEADER": "Basic Y2lzY28=",
         "NODE_TLS_REJECT_UNAUTHORIZED": "0"
       }
     }
@@ -103,7 +97,7 @@ LM Studio nutzt dasselbe Konfigurationsformat wie Claude Desktop. Sie verbinden 
 }
 ```
 
-   > Ersetzen Sie `<CML-IP>` und `<base64_encoded_cml_credentials>` durch Ihre Werte aus der Hauptübung. Die pyATS-Werte entsprechen den Workshop-Zugangsdaten `cisco/cisco` (Enable: `cisco`).
+   > Ersetzen Sie `<CML-IP>` und `<base64_encoded_cml_credentials>` durch Ihre Werte aus der Hauptübung. CLI-Befehle auf den Geräten (`send_cli_command`) funktionieren damit ebenfalls; zu abweichenden Gerätepasswörtern siehe Hauptübung, Schritt 2c.
 
 3. Speichern Sie die Datei. LM Studio startet den MCP-Server automatisch.
 4. Prüfen Sie im Chat unter **Integrations**, ob **Cisco Modeling Labs (CML)** erscheint, und aktivieren Sie den Eintrag. Die Liste der Tools des Servers wird dort angezeigt.
@@ -213,7 +207,7 @@ Die Erfahrungen aus dieser Erweiterung lassen sich auf drei Ebenen einordnen. Di
 - Erweiterung erstellt auf Basis der Hauptübung von: Kareem Iskander
 - Erweiterung: Michael Lotter
 - Datum: 02/2026, aktualisiert 11/2026 (Anpassung an CML 2.10 mit integriertem MCP-Server und mcp-remote)
-- Version: v1.1
+- Version: v1.2
 
 ![line](images/banner.png)
 <p align="center">
