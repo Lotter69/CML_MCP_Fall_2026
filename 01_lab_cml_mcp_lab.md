@@ -6,13 +6,14 @@
 
 In dieser Laborübung sammeln Sie praktische Erfahrungen mit **Cisco Modeling Labs (CML)** und dem **Model Context Protocol (MCP)**. Sie erfahren, wie CML eine leistungsstarke Umgebung für die Erstellung und das Testen von Netzwerktopologien bietet und wie MCP eine KI-gestützte Ebene hinzufügt, die die Interaktion mit CML schneller und intuitiver macht. Durch die Arbeit mit diesen Tools sammeln Sie praktische Erfahrungen bei der Einrichtung, Konfiguration und Verwendung von MCP mit CML.
 
-> **Neu ab CML 2.10:** Der MCP-Server ist direkt in CML integriert. Eine separate Installation eines MCP-Servers auf dem eigenen Rechner (bisher mit `uv` und `git clone`) entfällt. Auf dem Client wird nur noch **Node.js** benötigt, damit Claude Desktop über `mcp-remote` eine Verbindung zum MCP-Server in CML aufbauen kann.
+> **Neu ab CML 2.10:** Der MCP-Server ist direkt in CML integriert. Eine separate Installation eines MCP-Servers auf dem eigenen Rechner (bisher mit `uv` und `git clone`) entfällt. Auf dem Client wird nur noch **Node.js** benötigt, damit Claude Desktop über `mcp-remote` eine Verbindung zum MCP-Server in CML aufbauen kann. Auch **pyATS** ist im MCP-Server bereits enthalten. Damit Claude Befehle auf den laufenden Geräten ausführen kann (Tool `send_cli_command`), werden lediglich die Geräte-Zugangsdaten in der Client-Konfiguration ergänzt.
 
 ## Lernziele
 
 - Aktivieren Sie den **integrierten MCP-Server in CML 2.10**.
 - Verwenden Sie Claude Desktop als **MCP-Client**, um mit dem Server zu interagieren.
 - Erstellen Sie ein **KI-generiertes CML-Labor** mithilfe der MCP-Architektur und einem vorbereiteten und angereicherten Prompt.
+- Lassen Sie eine bearbeitete Laborübung **von der KI bewerten**, die dazu per pyATS die laufende Konfiguration der Geräte abfragt.
 
 ## Voraussetzungen
 
@@ -71,9 +72,11 @@ In dieser Laborübung sammeln Sie praktische Erfahrungen mit **Cisco Modeling La
 > - `X-Authorization` überträgt Ihre CML-Anmeldedaten. Der Wert kommt aus der Umgebungsvariablen `CML_AUTH_HEADER` (siehe Schritt 2).
 > - `NODE_TLS_REJECT_UNAUTHORIZED = "0"` erlaubt das selbstsignierte Zertifikat der CML-VM. Das ist **nur in der Laborumgebung** akzeptabel.
 
+Diese Grundkonfiguration reicht für alle Aufgaben rund um Labs, Nodes und Links. In Schritt 3 ergänzen Sie sie um zwei **pyATS-Header**, damit Claude auch Befehle auf den laufenden Geräten ausführen kann – die Voraussetzung für die Bewertung in Schritt 7.
+
 ---
 
-### Schritt 2: Node.js prüfen und den Authorization-Header (Base64) erzeugen
+### Schritt 2: Node.js prüfen und die Authorization-Header (Base64) erzeugen
 
 #### 2a) Node.js prüfen
 
@@ -134,6 +137,36 @@ Ausgegeben werden muss wieder `admin:IhrPasswort`.
 
 > **Wichtig: Base64 ist keine Verschlüsselung und kein Hash.** Der Wert lässt sich mit einem Befehl zurückrechnen (siehe Gegenprobe). Behandeln Sie ihn deshalb wie ein Passwort und geben Sie die Konfigurationsdatei nicht weiter.
 
+#### 2c) Base64-Werte für die pyATS-Header erzeugen
+
+pyATS meldet sich mit den **Zugangsdaten der virtuellen Geräte** an (nicht mit den CML-Zugangsdaten). Im Workshop sind das Benutzer `cisco`, Passwort `cisco` und Enable-Passwort `cisco`. Es werden zwei Werte benötigt:
+
+- `PYATS_AUTH_HEADER`: `Basic ` + Base64 von `benutzername:passwort` des Geräts
+- `PYATS_ENABLE_HEADER`: `Basic ` + Base64 **nur des Enable-Passworts** (ohne Benutzernamen)
+
+**Windows (PowerShell):**
+
+```powershell
+$devUser   = 'cisco'
+$devPass   = 'cisco'
+$enablePw  = 'cisco'
+"Basic " + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("${devUser}:${devPass}"))
+"Basic " + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($enablePw))
+```
+
+Ergebnis: `Basic Y2lzY286Y2lzY28=` (Geräte-Login) und `Basic Y2lzY28=` (Enable).
+
+**macOS (Terminal):**
+
+```bash
+printf '%s' 'cisco:cisco' | base64
+printf '%s' 'cisco' | base64
+```
+
+> **Hinweis:** Der Enable-Header ist optional. Fehlt er, verwendet pyATS das Passwort aus dem Geräte-Login auch als Enable-Passwort.
+
+> **Wichtig:** Die Geräte im Lab müssen diese Zugangsdaten auch tatsächlich kennen. Achten Sie darauf, dass der Prompt in Schritt 5 Claude anweist, Benutzer, Passwort und Enable-Passwort entsprechend in der Startkonfiguration der Geräte zu setzen.
+
 ---
 
 ### Schritt 3: Konfigurieren Sie den MCP-Server in Claude Desktop
@@ -144,7 +177,7 @@ Verbinden Sie nun den MCP-Server von CML mit **Claude Desktop**.
    - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
    - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-2. Fügen Sie die in Schritt 1 kopierte Konfiguration ein und ersetzen Sie den Platzhalter `<base64_encoded_cml_credentials>` durch Ihren Wert aus Schritt 2:
+2. Fügen Sie die in Schritt 1 kopierte Konfiguration ein, ergänzen Sie die beiden **pyATS-Header** und ersetzen Sie die Platzhalter durch Ihre Werte aus Schritt 2:
 
    ```json
    {
@@ -156,10 +189,16 @@ Verbinden Sie nun den MCP-Server von CML mit **Claude Desktop**.
            "mcp-remote",
            "https://<CML-IP>/mcp",
            "--header",
-           "X-Authorization:${CML_AUTH_HEADER}"
+           "X-Authorization:${CML_AUTH_HEADER}",
+           "--header",
+           "X-PyATS-Authorization:${PYATS_AUTH_HEADER}",
+           "--header",
+           "X-PyATS-Enable:${PYATS_ENABLE_HEADER}"
          ],
          "env": {
            "CML_AUTH_HEADER": "Basic YWRtaW46SWhyUGFzc3dvcnQ=",
+           "PYATS_AUTH_HEADER": "Basic Y2lzY286Y2lzY28=",
+           "PYATS_ENABLE_HEADER": "Basic Y2lzY28=",
            "NODE_TLS_REJECT_UNAUTHORIZED": "0"
          }
        }
@@ -167,7 +206,7 @@ Verbinden Sie nun den MCP-Server von CML mit **Claude Desktop**.
    }
    ```
 
-   > Das Wort `Basic` und **ein** Leerzeichen bleiben vor dem Base64-Wert stehen. Die Zeile `X-Authorization:${CML_AUTH_HEADER}` wird **nicht** verändert – sie enthält bewusst kein Leerzeichen, weil Claude Desktop unter Windows Argumente mit Leerzeichen nicht zuverlässig übergibt. Das Leerzeichen steckt deshalb im Wert der Umgebungsvariablen.
+   > Das Wort `Basic` und **ein** Leerzeichen bleiben vor jedem Base64-Wert stehen. Die Zeilen `X-Authorization:${CML_AUTH_HEADER}`, `X-PyATS-Authorization:${PYATS_AUTH_HEADER}` und `X-PyATS-Enable:${PYATS_ENABLE_HEADER}` werden **nicht** verändert – sie enthält bewusst kein Leerzeichen, weil Claude Desktop unter Windows Argumente mit Leerzeichen nicht zuverlässig übergibt. Das Leerzeichen steckt deshalb im Wert der Umgebungsvariablen.
 
    > Enthält Ihre Datei bereits andere MCP-Server, fügen Sie nur den Block `"Cisco Modeling Labs (CML)": { ... }` innerhalb von `"mcpServers"` ein und achten auf das Komma zwischen den Einträgen.
 
@@ -183,6 +222,7 @@ Verbinden Sie nun den MCP-Server von CML mit **Claude Desktop**.
 > - *Server startet nicht / `npx` nicht gefunden:* Node.js fehlt oder PATH ist nicht aktualisiert → Schritt 2a, danach Rechner bzw. Claude Desktop neu starten.
 > - *401 / Unauthorized:* Base64-Wert falsch → Gegenprobe aus Schritt 2b durchführen, `Basic ` davor prüfen.
 > - *Verbindungsfehler:* Ist `https://<CML-IP>` im Browser erreichbar? Ist der Dienst **MCPServer** in CML aktiviert (Schritt 1a)?
+> - *CLI-Befehle auf Geräten schlagen fehl:* pyATS-Header vorhanden und korrekt kodiert (Schritt 2c)? Läuft der Node (BOOTED)? Kennt das Gerät die Zugangsdaten `cisco/cisco`?
 
 ---
 
@@ -262,18 +302,20 @@ Sobald Sie die Aufgaben in CML abgeschlossen haben, ist es an der Zeit, Ihre Arb
   ```
   Bewerten Sie die Laborübung, mit dem Titel {Name oder ID des Lab} im Vergleich zur Musterlösung mit dem Titel {Name oder ID des Lab}
   ```
-3. Claude verbindet sich mit dem MCP-Server, überprüft den Status des Labors und gibt Feedback dazu, ob die Aufgaben korrekt abgeschlossen wurden.
+3. Claude verbindet sich mit dem MCP-Server, überprüft den Status des Labors und fragt über pyATS (`send_cli_command`) die laufende Konfiguration der Geräte ab. Anschließend gibt Claude Feedback dazu, ob die Aufgaben korrekt abgeschlossen wurden.
 4. Wenn Fehler oder unvollständige Konfigurationen vorliegen, hebt Claude diese hervor und schlägt Korrekturen vor.
 5. Optional können Sie vor der Bewertung absichtlich kleine Fehler in Ihrem CML-Labor machen, um zu sehen, wie Claude diese erkennt und darauf reagiert.
 
 > **Tipp:** Die Verwendung von Claude zur Bewertung von Laborarbeiten liefert sofortiges Feedback und zeigt Lehrkräften und Studierenden das Potenzial einer KI-gestützten Laborbewertung auf.
+
+> **Hinweis:** Fehlen die pyATS-Header aus Schritt 3, kann Claude nur die gespeicherte Startkonfiguration auswerten. Änderungen, die Sie direkt auf der Gerätekonsole vorgenommen haben, sieht Claude dann nicht.
 
 ---
 ## Rückblick und Zusammenfassung
 
 ### Was Sie erreicht haben
 - Den in **CML 2.10 integrierten MCP-Server** aktiviert
-- MCP-System mit **MCP-Client und Host (Claude)** konfiguriert – inklusive Base64-kodierter Anmeldung
+- MCP-System mit **MCP-Client und Host (Claude)** konfiguriert – inklusive Base64-kodierter Anmeldung für CML und pyATS
 - Assistierende **KI im Unterricht** unter Nutzung von **CML und MCP** erprobt
 
 
@@ -296,8 +338,8 @@ Versetzen Sie Ihre Umgebung wieder in einen aufgräumten Zustand:
 ## Autoren und Urheberrecht
 - Created by: Kareem Iskander
 - Übersetzung und Anpassung: Michael Lotter
-- Date: 09/2025, aktualisiert 09/2026 (Anpassung an CML 2.10 mit integriertem MCP-Server)
-- Version: v1.1
+- Date: 09/2025, aktualisiert 09/2026 (Anpassung an CML 2.10 mit integriertem MCP-Server), 11/2026 (pyATS-Header für CLI-Befehle und Bewertung)
+- Version: v1.2
 
 ![line](images/banner.png)
 <p align="center">
