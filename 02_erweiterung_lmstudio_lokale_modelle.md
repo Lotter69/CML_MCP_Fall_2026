@@ -25,6 +25,8 @@ Diese Erweiterung ist bewusst als **Vergleichsexperiment** aufgebaut: Sie führe
   - https://lmstudio.ai
 - Mindestens **16 GB RAM** im System (für größere Modelle empfohlen: 32 GB)
 - Eine dedizierte GPU ist hilfreich, aber nicht zwingend erforderlich
+- **CML ab Version 2.10** mit aktiviertem Dienst **MCPServer** und **Node.js (LTS)** – beides ist aus der Hauptübung bereits vorhanden
+- Die Base64-Werte für CML- und pyATS-Zugangsdaten aus der Hauptübung (Schritt 2b und 2c)
 
 ---
 
@@ -52,14 +54,16 @@ Dies ist der kritischste Konfigurationsschritt für die MCP-Nutzung.
 
 1. Laden Sie das Modell in LM Studio.
 2. Öffnen Sie die **Modelleinstellungen** (My Models → Qwen2.5-3B → Einstellungen).
-3. Setzen Sie die **Context Length** auf **32768**.
+3. Setzen Sie die **Context Length** auf **32768** (Startwert).
 
 > **Warum ist das so wichtig?**
-> Der CML MCP-Server registriert seinen gesamten Tool-Katalog als Teil des Prompts. Dieser Tool-Katalog umfasst ca. **27.000–39.000 Tokens**. Der Standard-Context von LM Studio (4096 Tokens) ist viel zu klein – jeder Aufruf schlägt mit folgendem Fehler fehl:
+> Der CML MCP-Server übergibt seinen gesamten Tool-Katalog als Teil des Prompts. Dieser Katalog umfasst **mehrere zehntausend Tokens**. Der Standard-Context von LM Studio (4096 Tokens) ist viel zu klein – jeder Aufruf schlägt mit einer Fehlermeldung dieser Art fehl:
 > ```
 > request (38738 tokens) exceeds the available context size (4096 tokens)
 > ```
-> Mit 32768 Tokens hat das Modell genug Platz für den Tool-Katalog, Ihren Prompt und die Antwort.
+> Die Fehlermeldung nennt die tatsächlich benötigte Anzahl Tokens. Stellen Sie die Context Length so ein, dass sie **deutlich über diesem Wert** liegt – der Tool-Katalog, Ihr Prompt, die Tool-Ergebnisse und die Antwort müssen gemeinsam hineinpassen. Reicht 32768 nicht aus, wählen Sie 65536.
+>
+> **Achtung bei kleinen Modellen:** `Qwen2.5-3B` unterstützt nativ höchstens 32k Tokens (siehe Tabelle in Schritt D). Ist der Tool-Katalog größer, stößt das 3B-Modell hier an eine harte Grenze – auch das ist ein Ergebnis des Vergleichs.
 
 > **Hinweis zur Hardware:** Eine größere Context Length erhöht den Speicherbedarf deutlich. Wenn Ihr System wenig VRAM hat, lagert LM Studio automatisch mehr Berechnungen auf die CPU aus. Das Modell wird langsamer, bleibt aber funktionsfähig.
 
@@ -67,33 +71,44 @@ Dies ist der kritischste Konfigurationsschritt für die MCP-Nutzung.
 
 ## Schritt C: CML MCP-Server in LM Studio konfigurieren
 
-1. Öffnen Sie in LM Studio den Reiter **Developer** → **MCP Servers**.
-2. Fügen Sie eine neue MCP-Server-Konfiguration hinzu:
+LM Studio nutzt dasselbe Konfigurationsformat wie Claude Desktop. Sie verbinden sich also mit demselben, in CML 2.10 integrierten MCP-Server – nur der MCP-Client (und damit das Sprachmodell) ist ein anderer.
+
+1. Öffnen Sie in LM Studio rechts den Reiter **Program** → **Install** → **Edit mcp.json**.
+2. Tragen Sie die Konfiguration aus der Hauptübung (Schritt 3) ein. Sie können den Block aus Ihrer `claude_desktop_config.json` unverändert übernehmen:
 
 ```json
 {
   "mcpServers": {
-    "Cisco Modeling Labs MCP Server": {
-      "command": "uvx",
-      "args": ["cml-mcp"],
+    "Cisco Modeling Labs (CML)": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://<CML-IP>/mcp",
+        "--header",
+        "X-Authorization:${CML_AUTH_HEADER}",
+        "--header",
+        "X-PyATS-Authorization:${PYATS_AUTH_HEADER}",
+        "--header",
+        "X-PyATS-Enable:${PYATS_ENABLE_HEADER}"
+      ],
       "env": {
-        "CML_URL": "<URL_OF_CML_SERVER>",
-        "CML_USERNAME": "<USERNAME_ON_CML_SERVER>",
-        "CML_PASSWORD": "<PASSWORD_ON_CML_SERVER>",
-        "PYATS_USERNAME": "<DEVICE_USERNAME>",
-        "PYATS_PASSWORD": "<DEVICE_PASSWORD>",
-        "PYATS_AUTH_PASS": "<DEVICE_ENABLE_PASSWORD>"
+        "CML_AUTH_HEADER": "Basic <base64_encoded_cml_credentials>",
+        "PYATS_AUTH_HEADER": "Basic Y2lzY286Y2lzY28=",
+        "PYATS_ENABLE_HEADER": "Basic Y2lzY28=",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
       }
     }
   }
 }
 ```
 
-3. Speichern Sie die Konfiguration und starten Sie den MCP-Server.
-4. Prüfen Sie im Log-Bereich, ob folgende Meldung erscheint:
-   ```
-   All tools registered successfully
-   ```
+   > Ersetzen Sie `<CML-IP>` und `<base64_encoded_cml_credentials>` durch Ihre Werte aus der Hauptübung. Die pyATS-Werte entsprechen den Workshop-Zugangsdaten `cisco/cisco` (Enable: `cisco`).
+
+3. Speichern Sie die Datei. LM Studio startet den MCP-Server automatisch.
+4. Prüfen Sie im Chat unter **Integrations**, ob **Cisco Modeling Labs (CML)** erscheint, und aktivieren Sie den Eintrag. Die Liste der Tools des Servers wird dort angezeigt.
+
+> **Tipp zur Fehlerbehebung:** Erscheint der Server nicht oder meldet einen Fehler, prüfen Sie zuerst, ob dieselbe Konfiguration in Claude Desktop funktioniert. Typische Ursachen sind ein fehlendes Node.js (`npx` nicht gefunden), ein falscher Base64-Wert (401) oder ein nicht aktivierter Dienst **MCPServer** in CML.
 
 ---
 
@@ -197,8 +212,8 @@ Die Erfahrungen aus dieser Erweiterung lassen sich auf drei Ebenen einordnen. Di
 ## Autoren und Urheberrecht
 - Erweiterung erstellt auf Basis der Hauptübung von: Kareem Iskander
 - Erweiterung: Michael Lotter
-- Datum: 02/2026
-- Version: v1.0
+- Datum: 02/2026, aktualisiert 11/2026 (Anpassung an CML 2.10 mit integriertem MCP-Server und mcp-remote)
+- Version: v1.1
 
 ![line](images/banner.png)
 <p align="center">
