@@ -130,11 +130,6 @@ printf '%s' 'admin:IhrPasswort' | base64
 
 Ausgegeben werden muss wieder `admin:IhrPasswort`.
 
-> **Stolperfallen:**
-> - Schreiben Sie in PowerShell `"${user}:${pass}"` mit geschweiften Klammern. Ohne Klammern interpretiert PowerShell `$user:` als Variable mit Bereichsangabe, und der Benutzername fehlt im Ergebnis.
-> - Setzen Sie Passwörter mit Sonderzeichen (`$`, `` ` ``, `"`) in **einfache** Anführungszeichen, damit PowerShell sie nicht auswertet.
-> - Kein Zeilenumbruch mitkodieren: Deshalb unter macOS `printf` statt `echo` verwenden.
-
 > **Wichtig: Base64 ist keine Verschlüsselung und kein Hash.** Der Wert lässt sich mit einem Befehl zurückrechnen (siehe Gegenprobe). Behandeln Sie ihn deshalb wie ein Passwort und geben Sie die Konfigurationsdatei nicht weiter.
 
 #### 2c) Optional: Abweichende Gerätepasswörter
