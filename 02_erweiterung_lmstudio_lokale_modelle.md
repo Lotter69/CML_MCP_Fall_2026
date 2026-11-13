@@ -25,7 +25,7 @@ Diese Erweiterung ist bewusst als **Vergleichsexperiment** aufgebaut: Sie führe
   - https://lmstudio.ai
 - Mindestens **16 GB RAM** im System (für größere Modelle empfohlen: 32 GB)
 - Eine dedizierte GPU ist hilfreich, aber nicht zwingend erforderlich
-- **CML ab Version 2.10** mit aktiviertem Dienst **MCPServer** und **Node.js (LTS)** – beides ist aus der Hauptübung bereits vorhanden
+- **CML ab Version 2.10** mit aktiviertem Dienst **MCPServer** und **Node.js (LTS)** für `npx mcp-remote` – beides ist aus der Hauptübung bereits vorhanden
 - Der Base64-Wert für die CML-Zugangsdaten aus der Hauptübung (Schritt 2b)
 
 ---
@@ -74,7 +74,16 @@ Dies ist der kritischste Konfigurationsschritt für die MCP-Nutzung.
 LM Studio nutzt dasselbe Konfigurationsformat wie Claude Desktop. Sie verbinden sich also mit demselben, in CML 2.10 integrierten MCP-Server – nur der MCP-Client (und damit das Sprachmodell) ist ein anderer.
 
 1. Öffnen Sie in LM Studio rechts den Reiter **Program** → **Install** → **Edit mcp.json**.
-2. Tragen Sie die Konfiguration aus der Hauptübung (Schritt 3) ein. Sie können den Block aus Ihrer `claude_desktop_config.json` unverändert übernehmen:
+2. Tragen Sie die Konfiguration für den CML-MCP-Server ein. Dafür gibt es zwei Wege:
+
+   **Weg A – Vorlage für LM Studio direkt aus CML (empfohlen):**
+   CML liefert fertige Client-Konfigurationen nicht nur für Claude Desktop, sondern auch für LM Studio (sowie Cursor und VS Code).
+   - In der CML-Weboberfläche unter **Tools** → **MCP Clients** die Variante für **LM Studio** wählen, mit **COPY** kopieren und in die `mcp.json` einfügen.
+   - Alternativ liefert die CML-API dieselben Vorlagen unter `GET /ai/mcp/configuration` (API-Doku: `https://<CML-IP>/api/v0/ui/`).
+   - Ersetzen Sie in der Vorlage den Platzhalter für die Zugangsdaten durch Ihren Base64-Wert aus der Hauptübung (Schritt 2b), inklusive `Basic ` davor.
+
+   **Weg B – Block aus der Hauptübung übernehmen:**
+   Wird in CML keine LM-Studio-Variante angezeigt, übernehmen Sie den Block aus Ihrer `claude_desktop_config.json`. LM Studio verwendet dasselbe Format `mcpServers`:
 
 ```json
 {
@@ -97,12 +106,12 @@ LM Studio nutzt dasselbe Konfigurationsformat wie Claude Desktop. Sie verbinden 
 }
 ```
 
-   > Ersetzen Sie `<CML-IP>` und `<base64_encoded_cml_credentials>` durch Ihre Werte aus der Hauptübung. CLI-Befehle auf den Geräten (`send_cli_command`) funktionieren damit ebenfalls; zu abweichenden Gerätepasswörtern siehe Hauptübung, Schritt 2c.
+   > Ersetzen Sie `<CML-IP>` und `<base64_encoded_cml_credentials>` durch Ihre Werte aus der Hauptübung. CLI-Befehle auf den Geräten (`send_cli_command`) funktionieren mit beiden Wegen ebenfalls; zu abweichenden Gerätepasswörtern siehe Hauptübung, Schritt 2c.
 
 3. Speichern Sie die Datei. LM Studio startet den MCP-Server automatisch.
 4. Prüfen Sie im Chat unter **Integrations**, ob **Cisco Modeling Labs (CML)** erscheint, und aktivieren Sie den Eintrag. Die Liste der Tools des Servers wird dort angezeigt.
 
-> **Tipp zur Fehlerbehebung:** Erscheint der Server nicht oder meldet einen Fehler, prüfen Sie zuerst, ob dieselbe Konfiguration in Claude Desktop funktioniert. Typische Ursachen sind ein fehlendes Node.js (`npx` nicht gefunden), ein falscher Base64-Wert (401) oder ein nicht aktivierter Dienst **MCPServer** in CML.
+> **Tipp zur Fehlerbehebung:** Erscheint der Server nicht oder meldet einen Fehler, prüfen Sie zuerst, ob die Verbindung in Claude Desktop funktioniert. Haben Sie Weg A genutzt und es klappt nicht, versuchen Sie Weg B. Typische Ursachen sind ein fehlendes Node.js (`npx` nicht gefunden, nur bei Konfigurationen mit `npx mcp-remote`), ein falscher Base64-Wert (401) oder ein nicht aktivierter Dienst **MCPServer** in CML.
 
 ---
 
@@ -207,7 +216,7 @@ Die Erfahrungen aus dieser Erweiterung lassen sich auf drei Ebenen einordnen. Di
 - Erweiterung erstellt auf Basis der Hauptübung von: Kareem Iskander
 - Erweiterung: Michael Lotter
 - Datum: 02/2026, aktualisiert 11/2026 (Anpassung an CML 2.10 mit integriertem MCP-Server und mcp-remote)
-- Version: v1.2
+- Version: v1.3
 
 ![line](images/banner.png)
 <p align="center">
