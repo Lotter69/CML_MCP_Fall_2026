@@ -72,7 +72,7 @@ In dieser Laborübung sammeln Sie praktische Erfahrungen mit **Cisco Modeling La
 > - `X-Authorization` überträgt Ihre CML-Anmeldedaten. Der Wert kommt aus der Umgebungsvariablen `CML_AUTH_HEADER` (siehe Schritt 2).
 > - `NODE_TLS_REJECT_UNAUTHORIZED = "0"` erlaubt das selbstsignierte Zertifikat der CML-VM. Das ist **nur in der Laborumgebung** akzeptabel.
 
-Diese Konfiguration reicht für alle Aufgaben – auch für CLI-Befehle auf laufenden Geräten (Tool `send_cli_command`), wie sie für die Bewertung in Schritt 7 gebraucht werden. pyATS läuft in der CML-VM, greift über den Konsolenserver von CML auf die Geräte zu und meldet sich dort mit seinen **Standard-Zugangsdaten** an (Passwort `cisco`). Nur wenn Geräte **abweichende Passwörter** verwenden, ist ein Zusatzschritt nötig (Schritt 2c).
+Diese Konfiguration reicht für alle Aufgaben – auch für CLI-Befehle auf laufenden Geräten (Tool `send_cli_command`), wie sie für die Bewertung in Schritt 7 gebraucht werden. pyATS läuft in der CML-VM, greift über den Konsolenserver von CML auf die Geräte zu und meldet sich dort mit den **Standard-Zugangsdaten** an, die CML für jedes Gerät im pyATS-Testbed hinterlegt (Benutzer `cisco`, Passwort `cisco`, Enable `cisco`). Nur wenn Geräte **abweichende Passwörter** verwenden, ist ein Zusatzschritt nötig (Schritt 2c).
 
 ---
 
@@ -139,7 +139,9 @@ Ausgegeben werden muss wieder `admin:IhrPasswort`.
 
 #### 2c) Optional: Abweichende Gerätepasswörter
 
-pyATS meldet sich an den Geräten mit seinen **Standard-Zugangsdaten** an (Passwort `cisco`). Solange die Geräte keine oder diese Passwörter verwenden, ist **nichts weiter zu tun**.
+pyATS meldet sich an den Geräten mit den **Standard-Zugangsdaten** an, die CML im pyATS-Testbed des Labs hinterlegt: Benutzer `cisco`, Passwort `cisco`, Enable-Passwort `cisco`. Solange die Geräte keine oder diese Passwörter verwenden, ist **nichts weiter zu tun**.
+
+> **Zum Nachsehen:** Das Testbed eines Labs lässt sich über die CML-API abrufen: `GET /labs/{lab_id}/pyats_testbed` (API-Doku unter `https://<CML-IP>/api/v0/ui/`, Anmeldung per Token aus `POST /authenticate`). Im Abschnitt `credentials` jedes Geräts stehen die Werte, die pyATS verwendet.
 
 Setzen Teilnehmende ein **anderes** Enable-Secret oder einen Konsolen-Login mit anderem Passwort, scheitert `send_cli_command` mit der Meldung:
 
@@ -153,7 +155,7 @@ The following credentials have been tried without success : ['default']
 2. Tragen Sie unter **Settings → PyATS** die Zugangsdaten des Geräts ein: **Username**, **Password** und **Enable Password**.
 3. Lassen Sie den Befehl von Claude erneut ausführen.
 
-Die Angaben gelten nur für diesen Node und werden mit dem Lab gespeichert.
+Die Angaben gelten nur für diesen Node, werden mit dem Lab gespeichert und ersetzen im Testbed die Standardwerte.
 
 **Lösung B – global für alle Geräte (laut Cisco-Dokumentation, nicht getestet):**
 
